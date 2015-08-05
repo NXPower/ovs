@@ -69,6 +69,11 @@
 #include "vlan-bitmap.h"
 #include "packets.h"
 
+#ifdef __linux__
+#include <linux/version.h>
+#include <sys/utsname.h>
+#endif
+
 VLOG_DEFINE_THIS_MODULE(bridge);
 
 COVERAGE_DEFINE(bridge_reconfigure);
@@ -4848,6 +4853,19 @@ free_registered_recs(void)
 static bool
 vlan_splinters_is_enabled(const struct ovsrec_interface *iface_cfg)
 {
+#ifdef __linux__
+    static int linux_version = 0;
+    if (linux_version == 0) {
+        struct utsname u;
+        int major, minor, patch;
+        uname(&u);
+        sscanf(u.release, "%d.%d.%d", &major, &minor, &patch);
+        linux_version = KERNEL_VERSION(major, minor, patch);
+    }
+    if (linux_version >= KERNEL_VERSION(3, 3, 0)) {
+        return false;
+    }
+#endif
     return smap_get_bool(&iface_cfg->other_config, "enable-vlan-splinters",
                          false);
 }
