@@ -56,6 +56,19 @@ stop () {
     rm -f /var/lock/subsys/openvswitch
 }
 
+clean_vxlan_tunnels() {
+    for br in $(ovs-vsctl list-br)
+    do
+        for port in $(ovs-vsctl list-ports $br)
+        do
+            if [ $(ovs-vsctl find interface type=vxlan name=$port | wc -l) -gt 0 ]
+            then
+                ovs-vsctl del-port $br $port
+            fi
+        done
+    done
+}
+
 restart () {
     if [ "$1" = "--save-flows=yes" ]; then
         start restart
@@ -68,6 +81,7 @@ restart () {
 case $1 in
     start)
         start
+	clean_vxlan_tunnels
         ;;
     stop)
         stop
