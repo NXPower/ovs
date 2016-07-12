@@ -136,6 +136,38 @@ del_transient_ports () {
     done
 }
 
+clean_ovs() {
+    for br in $(ovs_vsctl list-br)
+    do
+        if [ $(ovs_vsctl find bridge external_ids=derived=true name=$br | wc -l) -gt 0 ]
+        then
+            echo ovs_vsctl del-br $br
+            ovs_vsctl del-br $br
+        fi
+    done
+
+    echo Bridges:
+    ovs_vsctl list-br
+    echo
+
+    for br in $(ovs_vsctl list-br)
+    do
+        for port in $(ovs_vsctl list-ports $br)
+        do
+            if [ $(ovs_vsctl find interface type=vxlan name=$port | wc -l) -gt 0 ] ||
+               [ $(ovs_vsctl find interface type=patch name=$port | wc -l) -gt 0 ]
+            then
+                echo ovs_vsctl del-port $br $port
+                ovs_vsctl del-port $br $port
+            fi
+        done
+
+        echo Bridge $br ports
+        ovs_vsctl list-ports $br
+        echo
+    done
+}
+
 do_start_ovsdb () {
     check_force_cores
 
@@ -181,6 +213,8 @@ do_start_ovsdb () {
         if test X"$DELETE_TRANSIENT_PORTS" = Xyes; then
             del_transient_ports
         fi
+
+        clean_ovs
     fi
 }
 
