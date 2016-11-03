@@ -154,8 +154,9 @@ clean_ovs() {
     do
         for port in $(ovs_vsctl list-ports $br)
         do
-            if [ $(ovs_vsctl find interface type=vxlan name=$port | wc -l) -gt 0 ] ||
-               [ $(ovs_vsctl find interface type=patch name=$port | wc -l) -gt 0 ]
+            if [ "${port#vnet}" != "$port" -o "${port#tap}" != "$port" -o \
+                 $(ovs_vsctl find interface type=vxlan name=$port | wc -l) -gt 0 -o \
+                 $(ovs_vsctl find interface type=patch name=$port | wc -l) -gt 0 ]
             then
                 echo ovs_vsctl del-port $br $port
                 ovs_vsctl del-port $br $port
